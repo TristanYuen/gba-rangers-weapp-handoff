@@ -33,7 +33,8 @@
     ".github/workflows/upload-wechat-experience.yml": "8d70e356d8da41974d9b911f37230266367ef17470d4545d88f4e2dc5472add7",
     ".gitignore": "1244dcb1c4cd85abaddd97eeb7ae12e4f6fc4f38fcdde23aba9f5663546322c6",
     ".husky/commit-msg": "1eec2664550565e573567d1d83b31d45ffe4c6d68adf2775824ae1a14fdb479b",
-    "README.md": "6cb78f111dbc050e608f2e6ccc242437ee7c55f377e3b059312f0cf0e1334b35",
+    "AGENTS.md": "5af4f9b33822dfed424c2876a77fab5c27f78801bf1f1e1dcb0ea772bc923f20",
+    "README.md": "d29bdfd98226e5b5aa6fdd6dad81d018e78d7a05e28a21c7401f2f5582924728",
     "babel.config.js": "f1e7a31f5b599d97659c326ff41221c93dff46f0aeb7a67fd8bc9e9e1d43ff25",
     "cloudbase/database.rules.json": "21332b236c05c8c933289b5f5370cd860e770971128b9074018fabe2f5fe18f1",
     "cloudbase/function.rules.json": "5acebd325745f5ada3d2ecc4b6bb69d1dbfb3c17c6f4061a7e79d4c1556023d0",
@@ -68,7 +69,7 @@
     "docs/ARCHITECTURE.md": "4ac464631fe0f68a2eb25dcc24c20c5ad1e3901dd8b7b31e1ec33251899eba25",
     "docs/CLOUDBASE_HANDOFF_SUMMARY.md": "6b60653eb8bd540d8ca3af7595708cc85d6e9492c29323b253bd30957aa01454",
     "docs/CLOUD_COLLABORATION_DEPLOYMENT.md": "a6e9b2457096bc9e64c716a234d4596c7e19cf59ce1a518ead2dbdd9b382d928",
-    "docs/HANDOFF-2026-10-15.md": "2cb9444caf873586a6b3aef730506a39ffc38b18d7afdb3681ec810bacbfbbfb",
+    "docs/HANDOFF-2026-10-15.md": "cd823cab6c9e25cc3dcfeac533a1ae481b098de4e607d91c66fb7ed6adf4ba69",
     "docs/REAL_PREVIEW.md": "e9006f997e33df48f447dda1929debe09b50f171f69c5d31300a3d8ba4a0bf10",
     "docs/WECHAT_EXPERIENCE_UPLOAD.md": "d9b8a508717395a6bdebc3aff2a8e291bb0e9e0905b36a0b9badcdad8a66f45c",
     "docs/WECHAT_SUBSCRIBE_MESSAGE_PLAN.md": "8ffadac0ea07b0b0c8398dd7d8d2a574794613136c73e98e92bf041e0d832dd8",
@@ -90,10 +91,12 @@
     "scripts/open-wechat-preview.ps1": "1c21833994b79984b5e0dcaa2bfc72c3c8f4b3e4168134ff90d7b662d023c268",
     "scripts/prepare-cloud-import.ts": "a857cd6521eefb289fc6038dff74ea14d2fee48098399648124fe3c256103973",
     "scripts/serve-h5.mjs": "7e8b4bc1e45bbbdc43c5cf80dce0e733b38a3b31fa0e4d35040cd166d5016764",
+    "scripts/sync-import-package.mjs": "23417a26cbd4e9a6bf051f8b8d93532c10e0321d7ad428fa0ef73b0155b39136",
     "scripts/sync-roster-cloud.ts": "5dce2de06c35d072c3221a27724974b487e1672581346c6d20db39540bc1d960",
     "scripts/sync-wechat-import-package.ps1": "54906f0efb29d9e171450ea8ce6c7f4e969e9812e297e645ed9e66ca4d526a57",
     "scripts/sync-yearbook-cloud.ts": "b431702432b07ff89590a060fc0577428dd6197af0aec7ccbef83b7fcba18362",
     "scripts/verify-cloud-import.mjs": "a2ad2aaa76e60242647738795941d1db02123bfed3b0a1145cf0fffd36903242",
+    "scripts/verify-handoff.mjs": "6d9e978fd5930884826aa1b43a21f05d4b443710a2c382a8edbdd592133a6ffb",
     "src/app.config.ts": "b34cbef69e6066212ba2c61cc55b225b9be225dbc0b5166026f66dc2152f09c7",
     "src/app.scss": "ab814f87bf6e3a26fa91c3f1e74f0d1c7dd513114e8a000083582f68fe7aa531",
     "src/app.ts": "4219992b0c46150cdfa79b1727697c539ac4e80746be980b6298afee1c198521",
@@ -324,5 +327,6 @@
     "微信开发者工具导入包/project.config.json": "54b5fdbdf8bdb978a451b44da32670dcbef554d6156b55bf72e5fd6a5a635722",
     "微信开发者工具导入包/导入说明.md": "00d3cac5b932b829f11eff42d0ee4c01ba2f14a85e2a1c5bafc2eef44a92c6eb",
     "打开小程序真实预览.cmd": "3413fb532963bd975422961a8006abc4a54884d9393b9324db76dbd1f3ea843c"
-  }
+  },
+  "readmeRevision": "2026-10-15-complete"
 }
