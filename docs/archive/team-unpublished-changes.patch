@@ -1,0 +1,289 @@
+--- a/cloudfunctions-src/team/index.js
++++ b/cloudfunctions-src/team/index.js
+@@ -2,6 +2,39 @@
+ const { cloud, db, command, now, ok, getAccess, requireManager, requireOwner, audit, handleError } = require('./common')
+ 
+ const withClientId = (record) => record ? { ...record, id: record.id || record._id } : record
++const isFiniteAmount = (value) => typeof value === 'number' && Number.isFinite(value)
++const roleLabel = (role) => role === 'owner' ? '队长' : role === 'admin' ? '管理员' : '普通成员'
++const actionLabels = {
++  createPlayer: '新增球员',
++  updatePlayer: '更新球员资料',
++  createPlayerDirectly: '直接新增球员',
++  requestPlayerAddition: '提交新增球员申请',
++  approvePlayerAddition: '通过新增球员申请',
++  rejectPlayerAddition: '驳回新增球员申请',
++  updateYearbookEntry: '更新年鉴章节',
++  bootstrapOwner: '初始化队长身份',
++  approveIdentityClaim: '通过身份认领',
++  rejectIdentityClaim: '驳回身份认领',
++  setPaymentStatus: '更新缴费状态',
++  requestFeeChange: '提交会费调整',
++  reviewFeeChange: '审核会费调整',
++  updateMatch: '更新赛事',
++  deleteMatch: '删除赛事',
++  publishMatchStats: '发布赛后数据'
++}
++const entityLabels = {
++  player: '球员',
++  player_add_request: '新增球员申请',
++  team_membership: '成员身份',
++  yearbook_entry: '年鉴章节',
++  fee_change_request: '会费调整',
++  fee_payment: '缴费记录',
++  match: '赛事',
++  media_asset: '照片'
++}
++const safeText = (value) => typeof value === 'string' && value.trim() && !/(^|[_:\-])(player|member|request|openid|entity|audit)[_:\-]/i.test(value)
++  ? value.trim()
++  : undefined
+ const playerPatchFields = new Set([
+   'displayName',
+   'shirtNumber',
+@@ -33,7 +66,8 @@
+   if (!position || position.length > 50) throw Object.assign(new Error('请选择球员位置'), { code: 'INVALID_PLAYER' })
+   if (!Number.isInteger(shirtNumber) || shirtNumber < 0 || shirtNumber > 999) throw Object.assign(new Error('球衣号码无效'), { code: 'INVALID_PLAYER' })
+   if (!Number.isInteger(joinYear) || joinYear < 1900 || joinYear > 2100) throw Object.assign(new Error('入队年份无效'), { code: 'INVALID_PLAYER' })
+-  return { displayName, position, shirtNumber, joinYear }
++  const feePlanId = typeof payload?.feePlanId === 'string' ? payload.feePlanId.trim() : ''
++  return { displayName, position, shirtNumber, joinYear, ...(feePlanId ? { feePlanId } : {}) }
+ }
+ const ensurePlayerIdentityAvailable = async (teamId, values, excludedPlayerId) => {
+   const [sameNumber, sameName, pendingNumber] = await Promise.all([
+@@ -45,7 +79,38 @@
+   if (sameName.data.some((record) => record._id !== excludedPlayerId)) throw Object.assign(new Error('现役名册中已有同名球员'), { code: 'PLAYER_NAME_CONFLICT' })
+   return pendingNumber.data
+ }
++const currentBeijingPeriod = () => {
++  const date = new Date(Date.now() + 8 * 60 * 60 * 1000)
++  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
++}
++const readTeamFeePlan = async (feePlanId, teamId) => {
++  const plan = (await db.collection('fee_plans').doc(feePlanId).get()).data
++  if (!plan || plan.teamId !== teamId || plan.active !== true) throw Object.assign(new Error('会费类型不存在或已停用'), { code: 'FEE_PLAN_NOT_FOUND' })
++  return plan
++}
++const createInitialFeeAssignment = async (actor, playerId, feePlanId, sourceRequestId) => {
++  if (!feePlanId) return null
++  await readTeamFeePlan(feePlanId, actor.teamId)
++  const effectiveFrom = currentBeijingPeriod()
++  const id = hashId('fee_assignment', `${actor.teamId}:${playerId}:${effectiveFrom}:${Date.now()}:${Math.random()}`)
++  const assignment = {
++    teamId: actor.teamId,
++    playerId,
++    feePlanId,
++    effectiveFrom,
++    effectiveTo: null,
++    reason: '新增球员入册时设置',
++    adjustedByOpenid: actor.openid,
++    adjustedBy: actor.role === 'owner' ? '队长' : '管理员',
++    sourceRequestId: sourceRequestId || null,
++    createdAt: now(),
++    updatedAt: now()
++  }
++  await db.collection('player_fee_assignments').doc(id).set({ data: assignment })
++  return { id, ...assignment }
++}
+ const createPlayerRecord = async (actor, values, requestId) => {
++  if (values.feePlanId) await readTeamFeePlan(values.feePlanId, actor.teamId)
+   const id = hashId('player', `${actor.teamId}:${values.displayName}:${values.shirtNumber}:${Date.now()}:${Math.random()}`)
+   const record = {
+     teamId: actor.teamId,
+@@ -68,6 +133,7 @@
+   }
+   await db.collection('players').doc(id).set({ data: record })
+   await audit({ actor, action: 'createPlayer', entityType: 'player', entityId: id, before: null, after: record, requestId })
++  await createInitialFeeAssignment(actor, id, values.feePlanId, requestId)
+   return { id, ...record }
+ }
+ const validatePlayerPatch = (before, patch) => {
+@@ -133,6 +199,7 @@
+       const values = validateNewPlayer(event.payload)
+       const pending = await ensurePlayerIdentityAvailable(actor.teamId, values)
+       if (pending.length) throw Object.assign(new Error('该号码已有待审核的新球员申请'), { code: 'SHIRT_NUMBER_CONFLICT' })
++      if (values.feePlanId) await readTeamFeePlan(values.feePlanId, actor.teamId)
+       const id = hashId('player_add', `${actor.teamId}:${values.displayName}:${values.shirtNumber}:${Date.now()}:${Math.random()}`)
+       const approved = actor.role === 'owner'
+       const player = approved ? await createPlayerRecord(actor, values, event.requestId) : null
+@@ -209,7 +276,12 @@
+       db.collection('players').where({ teamId: access.teamId, deletedAt: command.exists(false) }).limit(200).get(),
+       db.collection('player_match_stats').aggregate()
+         .match({ teamId: access.teamId, countInStats: true, deletedAt: command.exists(false) })
+-        .group({ _id: '$playerId', goals: command.aggregate.sum('$goals'), assists: command.aggregate.sum('$assists'), apps: command.aggregate.sum(1) })
++        .group({
++          _id: '$playerId',
++          goals: command.aggregate.sum('$goals'),
++          assists: command.aggregate.sum('$assists'),
++          apps: command.aggregate.sum(1)
++        })
+         .limit(200)
+         .end(),
+       db.collection('yearbook_entries').where({ teamId: access.teamId, deletedAt: command.exists(false) }).limit(200).get(),
+@@ -226,7 +298,7 @@
+         ? db.collection('audit_logs').where({ teamId: access.teamId }).orderBy('createdAt', 'desc').limit(200).get()
+         : Promise.resolve({ data: [] }),
+       canManage
+-        ? db.collection('team_memberships').where({ teamId: access.teamId, active: true }).limit(200).get()
++        ? db.collection('team_memberships').where({ teamId: access.teamId }).limit(500).get()
+         : Promise.resolve({ data: [] }),
+       db.collection('notice_recipients').where(noticeRecipientScope).limit(1000).get(),
+       db.collection('notification_preferences').where({ teamId: access.teamId, openid: access.openid }).limit(1).get(),
+@@ -240,6 +312,34 @@
+       registrationCounts.set(signup.matchId, (registrationCounts.get(signup.matchId) || 0) + 1)
+     }
+     const playerById = new Map(players.data.map((player) => [player._id, player]))
++    const matchById = new Map(matches.data.map((match) => [match._id, match]))
++    const membershipById = new Map(memberships.data.map((membership) => [membership._id, membership]))
++    const membershipByOpenid = new Map(memberships.data.filter((membership) => membership.openid).map((membership) => [membership.openid, membership]))
++    const displayNameForPlayer = (playerId, fallback = '未知成员') => playerById.get(playerId)?.displayName || fallback
++    const displayNameForIdentity = ({ playerId, openid, role, fallback }) => {
++      const membership = openid ? membershipByOpenid.get(openid) : undefined
++      const resolvedPlayerId = playerId || membership?.playerId
++      return `${displayNameForPlayer(resolvedPlayerId, fallback || (role === 'owner' ? '球队队长' : '球队管理者'))}（${roleLabel(role)}）`
++    }
++    const displayNameForNoticeActor = (value) => {
++      if (value === 'system') return '系统自动提醒'
++      return displayNameForPlayer(value, safeText(value) || '球队管理者')
++    }
++    const actionLabel = (action) => actionLabels[action] || '更新球队资料'
++    const auditObjectName = (record) => {
++      const source = record.after || record.before || {}
++      if (record.entityType === 'player') return displayNameForPlayer(record.entityId)
++      if (record.entityType === 'match') return safeText(matchById.get(record.entityId)?.title) || '相关赛事'
++      if (record.entityType === 'team_membership') return displayNameForPlayer(source.playerId || membershipById.get(record.entityId)?.playerId)
++      if (record.entityType === 'player_add_request') return displayNameForPlayer(source.playerId, safeText(source.displayName) || '新增球员申请')
++      if (record.entityType === 'yearbook_entry') return safeText(source.title) || '年鉴章节'
++      if (record.entityType === 'fee_change_request' || record.entityType === 'fee_payment') return displayNameForPlayer(source.playerId, '相关球员')
++      return entityLabels[record.entityType] || '相关记录'
++    }
++    const auditNote = (record) => {
++      const source = record.after || record.before || {}
++      return safeText(source.reason) || safeText(source.note) || undefined
++    }
+     const visibleMedia = media.data.filter((record) => {
+       if (isOwner || record.reviewStatus === 'approved') return true
+       if (access.role === 'admin' && record.reviewStatus === 'hidden') return true
+@@ -274,11 +374,25 @@
+         goals: Number(record.goals) || 0,
+         assists: Number(record.assists) || 0
+       })),
+-      players: players.data.map((record) => withClientId({
+-        ...record,
+-        ...(record.memberType === 'formal' ? { stats: { apps: Number(aggregateByPlayerId.get(record._id)?.apps) || 0, goals: Number(aggregateByPlayerId.get(record._id)?.goals) || 0, assists: Number(aggregateByPlayerId.get(record._id)?.assists) || 0 }, seasonStats: { apps: Number(aggregateByPlayerId.get(record._id)?.apps) || 0, goals: Number(aggregateByPlayerId.get(record._id)?.goals) || 0, assists: Number(aggregateByPlayerId.get(record._id)?.assists) || 0 } } : {}),
+-        avatarUrl: temporaryFileUrls.get(record.avatarUrl) || record.avatarUrl
+-      })),
++      players: players.data.map((record) => {
++        const aggregate = aggregateByPlayerId.get(record._id)
++        return withClientId({
++          ...record,
++          ...(record.memberType === 'formal' ? {
++            stats: {
++              apps: Number(aggregate?.apps) || 0,
++              goals: Number(aggregate?.goals) || 0,
++              assists: Number(aggregate?.assists) || 0
++            },
++            seasonStats: {
++              apps: Number(aggregate?.apps) || 0,
++              goals: Number(aggregate?.goals) || 0,
++              assists: Number(aggregate?.assists) || 0
++            }
++          } : {}),
++          avatarUrl: temporaryFileUrls.get(record.avatarUrl) || record.avatarUrl
++        })
++      }),
+       yearbook: yearbook.data.map(withClientId),
+       signups: signups.data.map(withClientId),
+       media: visibleMedia.map((record) => withClientId({
+@@ -293,23 +407,32 @@
+           const recipient = personalRecipientByNoticeId.get(record._id)
+           const recipients = recipientsByNoticeId.get(record._id) || []
+           const recipientStatusByPlayerId = new Map(recipients.map((item) => [item.playerId, item.deliveryStatus || 'pending']))
++          const recipientDetails = canManage
++            ? (record.recipientDetails || []).map((detail) => ({
++                ...detail,
++                displayName: displayNameForPlayer(detail.playerId),
++                ...(record.type === 'fee_due' && safeText(record.feePeriod) && isFiniteAmount(detail.feeAmount)
++                  ? { feeAmount: detail.feeAmount }
++                  : {}),
++                deliveryStatus: recipientStatusByPlayerId.get(detail.playerId) || 'pending'
++              }))
++            : undefined
+           return withClientId({
+             ...record,
++            ...(record.type === 'fee_due' && safeText(record.feePeriod) && isFiniteAmount(record.feeAmount)
++              ? { feeAmount: record.feeAmount }
++              : { feeAmount: undefined }),
++            createdBy: displayNameForNoticeActor(record.createdBy),
+             targetPlayerId: record.targetPlayerId || null,
+             targetPlayerIds: canManage ? record.targetPlayerIds || recipients.map((item) => item.playerId) : [access.playerId],
+-            recipientDetails: canManage
+-              ? (record.recipientDetails || []).map((detail) => ({
+-                  ...detail,
+-                  deliveryStatus: recipientStatusByPlayerId.get(detail.playerId) || 'pending'
+-                }))
+-              : undefined,
++            recipientDetails,
+             content: canManage ? record.content : recipient?.content || record.content,
+             readBy: (!recipient && canManage) || recipient?.readAt ? [access.playerId] : [],
+             delivery: {
+               total: canManage ? recipients.length : 1,
+               delivered: canManage
+-                ? recipients.filter((item) => item.deliveryStatus === 'delivered').length
+-                : recipient?.deliveryStatus === 'delivered' ? 1 : 0,
++                ? recipients.filter((item) => ['delivered', 'sent'].includes(item.deliveryStatus)).length
++                : ['delivered', 'sent'].includes(recipient?.deliveryStatus) ? 1 : 0,
+               unavailable: canManage
+                 ? recipients.filter((item) => ['failed', 'unavailable'].includes(item.deliveryStatus)).length
+                 : ['failed', 'unavailable'].includes(recipient?.deliveryStatus) ? 1 : 0
+@@ -320,20 +443,32 @@
+       feePlans: feePlans.data.map(withClientId),
+       feeAssignments: feeAssignments.data.map(withClientId),
+       feePayments: feePayments.data.map(withClientId),
+-      feeChangeRequests: feeChangeRequests.data.map(withClientId),
+-      playerAddRequests: playerAddRequests.data.map(withClientId),
++      feeChangeRequests: feeChangeRequests.data.map((record) => withClientId({
++        ...record,
++        requestedBy: displayNameForIdentity({ playerId: record.requestedByPlayerId, openid: record.requestedByOpenid, role: 'admin', fallback: safeText(record.requestedBy) || '球队管理者' }),
++        reviewedBy: record.reviewedByOpenid
++          ? displayNameForIdentity({ playerId: record.reviewedByPlayerId, openid: record.reviewedByOpenid, role: 'owner', fallback: '球队队长' })
++          : record.reviewedBy
++      })),
++      playerAddRequests: playerAddRequests.data.map((record) => withClientId({
++        ...record,
++        requestedBy: displayNameForIdentity({ playerId: record.requestedByPlayerId, openid: record.requestedByOpenid, role: record.requestedByRole || 'admin', fallback: safeText(record.requestedBy) || '球队管理者' }),
++        reviewedBy: record.reviewedByOpenid
++          ? displayNameForIdentity({ playerId: record.reviewedByPlayerId, openid: record.reviewedByOpenid, role: 'owner', fallback: '球队队长' })
++          : record.reviewedBy
++      })),
+       membershipApplications: memberships.data
+         .filter((record) => record.status === 'pending')
+         .map((record) => withClientId({
+           _id: record._id,
+-          displayName: playerById.get(record.playerId)?.displayName || record.playerId,
++          displayName: displayNameForPlayer(record.playerId),
+           playerId: record.playerId,
+           requestedAt: record.createdAt,
+           status: record.status,
+           role: record.role || 'player'
+         })),
+       teamRoles: memberships.data
+-        .filter((record) => record.status === 'approved' && record.playerId)
++        .filter((record) => record.status === 'approved' && record.active !== false && record.playerId)
+         .map((record) => ({
+           playerId: record.playerId,
+           role: record.role || 'player',
+@@ -342,10 +477,10 @@
+         })),
+       managerOperationLogs: auditLogs.data.map((record) => withClientId({
+         _id: record._id,
+-        action: record.action,
+-        summary: `${record.entityType || 'record'}：${record.entityId || ''}`,
+-        note: record.requestId ? `请求 ID：${record.requestId}` : undefined,
+-        signedBy: `${playerById.get(record.actorPlayerId)?.displayName || '球队管理者'}（${record.actorRole === 'owner' ? '队长' : '管理员'}）`,
++        action: actionLabel(record.action),
++        summary: `${actionLabel(record.action)}：${auditObjectName(record)}`,
++        note: auditNote(record),
++        signedBy: displayNameForIdentity({ playerId: record.actorPlayerId, openid: record.actorOpenid, role: record.actorRole, fallback: record.actorRole === 'owner' ? '球队队长' : '球队管理者' }),
+         createdAt: record.createdAt
+       })),
+       access

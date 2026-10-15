@@ -1,0 +1,40 @@
+{
+  "version": "003",
+  "description": "Authoritative roster updates, player onboarding and realtime counters",
+  "collections": [
+    "player_add_requests"
+  ],
+  "indexes": [
+    {
+      "collection": "player_add_requests",
+      "name": "player_add_review_queue",
+      "fields": [
+        { "field": "teamId", "order": "asc" },
+        { "field": "status", "order": "asc" },
+        { "field": "requestedAt", "order": "desc" }
+      ]
+    },
+    {
+      "collection": "player_add_requests",
+      "name": "pendingKey_unique",
+      "unique": true,
+      "fields": [
+        { "field": "pendingKey", "order": "asc" }
+      ]
+    },
+    {
+      "collection": "players",
+      "name": "active_shirt_number",
+      "fields": [
+        { "field": "teamId", "order": "asc" },
+        { "field": "status", "order": "asc" },
+        { "field": "shirtNumber", "order": "asc" }
+      ]
+    }
+  ],
+  "preconditions": [
+    "Create player_add_requests before deploying the updated team function.",
+    "Confirm active shirt numbers are unique before enabling player onboarding.",
+    "Back up players and player_fee_assignments before applying the 2026-08-01 roster snapshot."
+  ]
+}

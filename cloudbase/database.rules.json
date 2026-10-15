@@ -1,0 +1,5 @@
+{
+  "read": false,
+  "write": false,
+  "description": "客户端不直接读写数据库。公开与内部数据统一由云函数按 DTO 返回。"
+}

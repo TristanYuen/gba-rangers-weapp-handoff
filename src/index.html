@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <meta content="width=device-width,initial-scale=1,user-scalable=no" name="viewport">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-touch-fullscreen" content="yes">
+  <meta name="format-detection" content="telephone=no,address=no">
+  <meta name="apple-mobile-web-app-status-bar-style" content="white">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" >
+  <title>GBA RANGERS 手机预览</title>
+  <style>
+    html, body { margin: 0; min-height: 100%; background: #e9edf7; }
+    .preview-label { display: none; }
+    @media (min-width: 700px) {
+      body { overflow: hidden; background: radial-gradient(circle at 20% 15%, #dce6ff 0, transparent 34%), linear-gradient(145deg, #eef2fa, #d8deeb); }
+      body::before { content: "GBA RANGERS"; position: fixed; left: 42px; top: 42px; color: #092797; font: 800 24px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 2px; }
+      body::after { content: "WEB MOBILE PREVIEW"; position: fixed; left: 44px; top: 78px; color: #67728f; font: 600 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 3px; }
+      #app { position: relative; width: 430px; height: min(844px, calc(100vh - 40px)); margin: 20px auto; overflow-x: hidden; overflow-y: auto; border: 10px solid #06133d; border-radius: 42px; background: #f5f7fb; box-shadow: 0 30px 90px rgba(6, 19, 61, .28); transform: translateZ(0); scrollbar-width: none; }
+      #app::-webkit-scrollbar { display: none; }
+      #app::before { content: ""; position: sticky; display: block; z-index: 9999; top: 8px; width: 112px; height: 26px; margin: 0 auto -26px; border-radius: 18px; background: #06133d; pointer-events: none; }
+      .taro-tabbar__tabbar { width: 430px !important; left: 50% !important; right: auto !important; bottom: max(20px, calc((100vh - min(844px, calc(100vh - 40px))) / 2 + 10px)) !important; transform: translateX(-50%); }
+    }
+  </style>
+  <script><%= htmlWebpackPlugin.options.script %></script>
+</head>
+<body>
+  <div id="app"></div>
+</body>
+</html>

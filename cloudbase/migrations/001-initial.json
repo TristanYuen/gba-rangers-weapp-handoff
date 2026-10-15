@@ -1,0 +1,44 @@
+{
+  "version": "001",
+  "description": "GBA RANGERS V1.0 initial document database schema",
+  "collections": [
+    "users",
+    "teams",
+    "players",
+    "team_memberships",
+    "seasons",
+    "matches",
+    "signups",
+    "appearances",
+    "player_match_stats",
+    "media_assets",
+    "media_links",
+    "yearbook_entries",
+    "migration_batches",
+    "migration_issues",
+    "notification_jobs",
+    "team_notices",
+    "notice_recipients",
+    "audit_logs"
+  ],
+  "indexes": [
+    { "collection": "players", "name": "sourceKey_unique", "unique": true, "fields": [{ "field": "sourceKey", "order": "asc" }] },
+    { "collection": "players", "name": "public_roster", "fields": [{ "field": "publicAuthorized", "order": "asc" }, { "field": "memberType", "order": "asc" }, { "field": "status", "order": "asc" }] },
+    { "collection": "team_memberships", "name": "uniqueKey_unique", "unique": true, "fields": [{ "field": "uniqueKey", "order": "asc" }] },
+    { "collection": "team_memberships", "name": "review_queue", "fields": [{ "field": "teamId", "order": "asc" }, { "field": "status", "order": "asc" }, { "field": "createdAt", "order": "desc" }] },
+    { "collection": "matches", "name": "sourceKey_unique", "unique": true, "fields": [{ "field": "sourceKey", "order": "asc" }] },
+    { "collection": "matches", "name": "public_match_list", "fields": [{ "field": "status", "order": "asc" }, { "field": "matchDate", "order": "desc" }] },
+    { "collection": "signups", "name": "uniqueKey_unique", "unique": true, "fields": [{ "field": "uniqueKey", "order": "asc" }] },
+    { "collection": "signups", "name": "match_roster", "fields": [{ "field": "matchId", "order": "asc" }, { "field": "choice", "order": "asc" }, { "field": "placement", "order": "asc" }, { "field": "updatedAt", "order": "asc" }] },
+    { "collection": "appearances", "name": "uniqueKey_unique", "unique": true, "fields": [{ "field": "uniqueKey", "order": "asc" }] },
+    { "collection": "player_match_stats", "name": "uniqueKey_unique", "unique": true, "fields": [{ "field": "uniqueKey", "order": "asc" }] },
+    { "collection": "player_match_stats", "name": "player_history", "fields": [{ "field": "playerId", "order": "asc" }, { "field": "matchDate", "order": "desc" }] },
+    { "collection": "media_assets", "name": "review_queue", "fields": [{ "field": "reviewStatus", "order": "asc" }, { "field": "createdAt", "order": "asc" }] },
+    { "collection": "yearbook_entries", "name": "public_year", "fields": [{ "field": "year", "order": "desc" }, { "field": "public", "order": "asc" }, { "field": "date", "order": "desc" }] },
+    { "collection": "migration_batches", "name": "fileHash_unique", "unique": true, "fields": [{ "field": "fileHash", "order": "asc" }] }
+  ],
+  "rollback": {
+    "strategy": "Remove collections and indexes only before production data exists. After launch, use versioned forward migrations.",
+    "migrationData": "Rollback imported records by migrationBatchId and restore before snapshots from migration_batches."
+  }
+}

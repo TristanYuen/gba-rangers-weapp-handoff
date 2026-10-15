@@ -1,0 +1,41 @@
+{
+  "miniprogramRoot": "miniprogram/",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "projectname": "gba-rangers-weapp",
+  "description": "GBA RANGERS 微信小程序",
+  "appid": "wx5ded6945b59deb10",
+  "compileType": "miniprogram",
+  "setting": {
+    "urlCheck": false,
+    "es6": false,
+    "enhance": true,
+    "compileHotReLoad": false,
+    "postcss": false,
+    "minified": false,
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {},
+  "libVersion": "3.17.0"
+}

@@ -1,0 +1,78 @@
+{
+  "name": "gba-rangers-weapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GBA RANGERS 微信小程序",
+  "scripts": {
+    "build:weapp": "taro build --type weapp",
+    "package:weapp": "pnpm build:weapp && pnpm build:cloudfunctions && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/sync-wechat-import-package.ps1",
+    "build:h5": "taro build --type h5",
+    "build:cloudfunctions": "node scripts/build-cloudfunctions.mjs",
+    "dev:weapp": "taro build --type weapp --watch",
+    "dev:h5": "taro build --type h5 --watch",
+    "preview:h5": "node scripts/serve-h5.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --ext .ts,.tsx src scripts tests",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "migrate:legacy": "tsx scripts/import-legacy-2026.ts",
+    "prepare:cloud-import": "tsx scripts/prepare-cloud-import.ts",
+    "verify:cloud-import": "node scripts/verify-cloud-import.mjs",
+    "sync:roster": "tsx scripts/sync-roster-cloud.ts",
+    "sync:yearbook": "tsx scripts/sync-yearbook-cloud.ts"
+  },
+  "browserslist": {
+    "development": [
+      "defaults and fully supports es6-module",
+      "maintained node versions"
+    ],
+    "production": [
+      "last 3 versions",
+      "Android >= 7",
+      "iOS >= 12"
+    ]
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.28.4",
+    "@tarojs/components": "4.2.1",
+    "@tarojs/helper": "4.2.1",
+    "@tarojs/plugin-framework-react": "4.2.1",
+    "@tarojs/plugin-platform-h5": "4.2.1",
+    "@tarojs/plugin-platform-weapp": "4.2.1",
+    "@tarojs/react": "4.2.1",
+    "@tarojs/runtime": "4.2.1",
+    "@tarojs/shared": "4.2.1",
+    "@tarojs/taro": "4.2.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.4",
+    "@babel/preset-react": "^7.24.1",
+    "@tarojs/cli": "4.2.1",
+    "@tarojs/taro-loader": "4.2.1",
+    "@tarojs/webpack5-runner": "4.2.1",
+    "@types/node": "^24.7.2",
+    "@types/react": "^18.3.24",
+    "@types/webpack-env": "^1.18.8",
+    "@vitest/coverage-v8": "^4.1.10",
+    "babel-preset-taro": "4.2.1",
+    "eslint": "^8.57.1",
+    "eslint-config-taro": "4.2.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "react-refresh": "^0.14.0",
+    "sass": "^1.93.2",
+    "tsconfig-paths-webpack-plugin": "^4.2.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vitest": "^4.1.10",
+    "webpack": "5.91.0",
+    "xlsx": "^0.18.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

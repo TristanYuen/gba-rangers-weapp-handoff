@@ -1,0 +1,83 @@
+name: Upload WeChat experience build
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: wechat-experience-upload
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    name: Build and upload experience version
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.22.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build WeChat Mini Program
+        run: pnpm build:weapp
+
+      - name: Prepare upload metadata
+        id: metadata
+        shell: bash
+        run: |
+          appid="$(node -p "require('./project.config.json').appid")"
+          version="1.0.${GITHUB_RUN_NUMBER}"
+          description="experience ${GITHUB_SHA::7}: $(git log -1 --pretty=%s)"
+          {
+            echo "appid=$appid"
+            echo "version=$version"
+            echo "description<<EOF"
+            echo "$description"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write WeChat upload key
+        id: key
+        env:
+          MINIPROGRAM_PRIVATE_KEY: ${{ secrets.MINIPROGRAM_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          test -n "$MINIPROGRAM_PRIVATE_KEY"
+          key_path="$RUNNER_TEMP/miniprogram-private.key"
+          printf '%s' "$MINIPROGRAM_PRIVATE_KEY" > "$key_path"
+          chmod 600 "$key_path"
+          echo "path=$key_path" >> "$GITHUB_OUTPUT"
+
+      - name: Upload experience version to WeChat
+        run: |
+          pnpm dlx miniprogram-ci@2.1.31 upload \
+            --appid "${{ steps.metadata.outputs.appid }}" \
+            --project-path "$GITHUB_WORKSPACE" \
+            --private-key-path "${{ steps.key.outputs.path }}" \
+            --upload-version "${{ steps.metadata.outputs.version }}" \
+            --upload-description "${{ steps.metadata.outputs.description }}" \
+            --robot 1 \
+            --use-project-config true \
+            --use-cos true

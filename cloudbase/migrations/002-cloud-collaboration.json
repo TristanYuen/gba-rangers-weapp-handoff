@@ -1,0 +1,122 @@
+{
+  "version": "002",
+  "description": "Cloud collaboration, identity claims and fee management",
+  "collections": [
+    "identity_claim_locks",
+    "identity_invites",
+    "fee_plans",
+    "player_fee_assignments",
+    "fee_change_requests",
+    "fee_payments",
+    "notification_preferences"
+  ],
+  "indexes": [
+    {
+      "collection": "team_memberships",
+      "name": "openidKey_unique",
+      "unique": true,
+      "fields": [
+        { "field": "openidKey", "order": "asc" }
+      ]
+    },
+    {
+      "collection": "team_memberships",
+      "name": "playerKey_unique",
+      "unique": true,
+      "fields": [
+        { "field": "playerKey", "order": "asc" }
+      ]
+    },
+    {
+      "collection": "team_memberships",
+      "name": "active_review_queue",
+      "fields": [
+        { "field": "teamId", "order": "asc" },
+        { "field": "active", "order": "asc" },
+        { "field": "status", "order": "asc" },
+        { "field": "createdAt", "order": "asc" }
+      ]
+    },
+    {
+      "collection": "identity_claim_locks",
+      "name": "team_active_claims",
+      "fields": [
+        { "field": "teamId", "order": "asc" },
+        { "field": "active", "order": "asc" },
+        { "field": "playerId", "order": "asc" }
+      ]
+    },
+    {
+      "collection": "identity_invites",
+      "name": "codeHash_unique",
+      "unique": true,
+      "fields": [
+        { "field": "codeHash", "order": "asc" }
+      ]
+    },
+    {
+      "collection": "fee_plans",
+      "name": "team_active_plans",
+      "fields": [
+        { "field": "teamId", "order": "asc" },
+        { "field": "active", "order": "asc" }
+      ]
+    },
+    {
+      "collection": "player_fee_assignments",
+      "name": "player_effective_period",
+      "fields": [
+        { "field": "teamId", "order": "asc" },
+        { "field": "playerId", "order": "asc" },
+        { "field": "effectiveFrom", "order": "desc" }
+      ]
+    },
+    {
+      "collection": "fee_change_requests",
+      "name": "fee_review_queue",
+      "fields": [
+        { "field": "teamId", "order": "asc" },
+        { "field": "status", "order": "asc" },
+        { "field": "requestedAt", "order": "asc" }
+      ]
+    },
+    {
+      "collection": "fee_change_requests",
+      "name": "pendingKey_unique",
+      "unique": true,
+      "fields": [
+        { "field": "pendingKey", "order": "asc" }
+      ]
+    },
+    {
+      "collection": "fee_payments",
+      "name": "paymentKey_unique",
+      "unique": true,
+      "fields": [
+        { "field": "paymentKey", "order": "asc" }
+      ]
+    },
+    {
+      "collection": "notification_preferences",
+      "name": "memberPreferenceKey_unique",
+      "unique": true,
+      "fields": [
+        { "field": "memberPreferenceKey", "order": "asc" }
+      ]
+    },
+    {
+      "collection": "notification_jobs",
+      "name": "pending_confirmation_due",
+      "fields": [
+        { "field": "eventName", "order": "asc" },
+        { "field": "status", "order": "asc" },
+        { "field": "runAt", "order": "asc" }
+      ]
+    }
+  ],
+  "preconditions": [
+    "Delete malformed team_memberships documents before creating unique indexes.",
+    "Backfill openidKey, playerKey and active on every retained membership.",
+    "Create the first bootstrap invitation only after formal players are imported."
+  ]
+}
